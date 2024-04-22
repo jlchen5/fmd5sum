@@ -8,6 +8,15 @@ This script will use Python’s hashlib library, which provides the MD5 function
 - Concurrency: Utilizes ThreadPoolExecutor from Python's concurrent.futures module to hash multiple files in parallel, which can significantly speed up the process when dealing with multiple files on multi-core processors.
 - Error Handling: Gracefully handles errors such as missing files or read permissions.
 
+## Install
+
+
+```bash
+$ pip install fmd5sum
+
+$ conda install -c jlchen1 fmd5sum
+```
+
 ## Usage
 You would run this script from the command line, providing the files you wish to hash as arguments. For example:
 
