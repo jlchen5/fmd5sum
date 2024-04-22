@@ -21,7 +21,7 @@ $ conda install -c jlchen1 fmd5sum
 You would run this script from the command line, providing the files you wish to hash as arguments. For example:
 
 ```bash
-python fmd5sum.py file1.txt file2.txt
+$ python fmd5sum.py file1.txt file2.txt
 ```
 
 This command will print the MD5 hashes of `file1.txt` and `file2.txt`.
