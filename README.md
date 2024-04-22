@@ -9,12 +9,10 @@ This script will use Python’s hashlib library, which provides the MD5 function
 - Error Handling: Gracefully handles errors such as missing files or read permissions.
 
 ## Install
-
+This package can download by `pip` conmmand.
 
 ```bash
 $ pip install fmd5sum
-
-$ conda install -c jlchen1 fmd5sum
 ```
 
 ## Usage
