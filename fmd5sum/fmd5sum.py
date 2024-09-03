@@ -20,13 +20,14 @@ def md5sum(filename, blocksize=65536):
         return None
     return hash.hexdigest()
 
-def process_files(files):
+def process_files(files, max_workers=10):
     """
     Process a list of files to calculate their MD5 checksums concurrently.
 
     :param files: List of file paths.
+    :param max_workers: Maximum number of threads to use.
     """
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(md5sum, file): file for file in files}
         for future in as_completed(futures):
             file = futures[future]
