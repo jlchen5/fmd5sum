@@ -85,3 +85,8 @@ Using these instructions, you can effectively use `fmd5sum` to calculate MD5 che
 ## Notes
 - Performance: While this script adds concurrency, its performance benefit will primarily be seen when processing multiple files due to the overhead of starting Python and loading libraries. The read operation's optimization (by using a large block size) also helps with very large files.    Installation: Make sure you have Python installed on your system to use this script. Most Linux systems have Python installed by default.
 - Limitations: For single, especially smaller, files, the original md5sum might still outperform this script due to the overhead of Python.
+
+
+## License
+
+This project is licensed under the [MIT License](https://github.com/jlchen5/fmd5sum/blob/main/LICENSE).
