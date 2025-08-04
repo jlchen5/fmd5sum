@@ -1,7 +1,11 @@
 [run]
 source = fmd5sum
-omit = tests/*
+omit = 
+    tests/*
 
 [report]
 show_missing = true
 fail_under = 95
+exclude_lines = 
+    if __name__ == .__main__.
+    pragma: no cover
