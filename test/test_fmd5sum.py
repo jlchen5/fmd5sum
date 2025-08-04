@@ -4,20 +4,19 @@ import hashlib
 import tempfile
 from fmd5sum import md5sum
 
-@pytest.fixture
-def create_test_file():
-    """Creates a temporary test file with known content."""
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(b"Test content for MD5 calculation")
-        tmp_path = tmp.name
-    yield tmp_path
-    os.unlink(tmp_path)
-
-def test_md5sum_correctness(create_test_file):
+def test_md5sum_correctness():
     """Test the MD5 calculation correctness."""
-    # Expected hash of "Test content for MD5 calculation"
-    expected_hash = "ee4f7c3b32e3c9dfb01bb9f9b1acf1c0"
-    assert md5sum(create_test_file) == expected_hash
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        content = b"Test content for MD5 calculation"
+        tmp.write(content)
+        tmp_path = tmp.name
+        
+    try:
+        # Expected hash of "Test content for MD5 calculation"
+        expected_hash = hashlib.md5(content).hexdigest()
+        assert md5sum(tmp_path) == expected_hash
+    finally:
+        os.unlink(tmp_path)
 
 def test_md5sum_large_file():
     """Test large file handling."""
@@ -43,7 +42,7 @@ def test_empty_file():
         tmp_path = tmp.name
     
     try:
-        expected_hash = "d41d8cd98f00b204e9800998ecf8427e"  # MD5 of empty file
+        expected_hash = hashlib.md5().hexdigest()  # MD5 of empty file
         assert md5sum(tmp_path) == expected_hash
     finally:
         os.unlink(tmp_path)
@@ -61,3 +60,30 @@ def test_binary_file():
         assert md5sum(tmp_path) == expected_hash
     finally:
         os.unlink(tmp_path)
+
+# Add test for parallel processing
+def test_parallel_processing(capsys):
+    """Test the parallel processing functionality."""
+    files = []
+    try:
+        # Create 5 temporary test files
+        for i in range(5):
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                content = f"Test file {i}".encode()
+                tmp.write(content)
+                files.append(tmp.name)
+        
+        # Import and run the parallel process function
+        from fmd5sum import process_files
+        process_files(files, max_workers=2)
+        
+        captured = capsys.readouterr()
+        outputs = captured.out.splitlines()
+        assert len(outputs) == len(files)
+        
+        # Verify each file has an output line
+        for filename in files:
+            assert any(filename in line for line in outputs)
+    finally:
+        for filename in files:
+            os.unlink(filename)
