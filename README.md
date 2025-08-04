@@ -27,6 +27,13 @@ cd parallel-md5sum
 python setup.py install
 ```
 
+with conda:
+
+```bash
+conda env create -f environment.yml
+conda activate fmd5sum-env
+```
+
 ## Usage
 
 ### Basic Usage
