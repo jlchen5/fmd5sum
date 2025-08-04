@@ -1,0 +1,19 @@
+name: fmd5sum-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10           # Primary Python version
+  - pip                   # For package installation
+  - pre-commit            # For automatic code formatting
+  - coverage              # For test coverage reporting
+  - pytest                # Testing framework
+  - pytest-cov            # Test coverage plugin
+  - pylint                # Code quality checker
+  - black                 # Code formatter
+  - tqdm                  # Optional: for progress bars in future enhancements
+  - click                 # Optional: for CLI enhancements
+  - pip:                  # Add any PyPI-only dependencies
+      - build             # For building packages
+      - twine             # For PyPI uploads
+      - -e .              # Install current package in editable mode
