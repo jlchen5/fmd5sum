@@ -21,6 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov coverage
+          # Install the package in the environment
           pip install .
           
       - name: Run tests
