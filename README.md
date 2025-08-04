@@ -20,17 +20,14 @@ After installation, you can use fmd5sum directly from the command line to calcul
 
 ### Using fmd5sum from the Command Line
 ```bash
-$ python fmd5sum.py file1.txt file2.txt
+$ python fmd5sum.py file1.txt file2.img
+
+$ python fmd5sum.py -j 8 -b 1048576 largefile.iso
+
+$ python fmd5sum.py *
 ```
 
-This command will print the MD5 hashes of `file1.txt` and `file2.txt`.
 
-**Example Output**
-~~~
-a5d3b47dafc67a8455a614addd4957ad  file1.txt
-3ad5d947da67a8575a3abfaadd4547bd  file2.txt
-ab45b947ee67a9375ac41faadd1157cd  file3.txt
-~~~
 
 ### Using fmd5sum as a Python Module
 If you prefer to use fmd5sum within a Python script, here’s how you can do it:
