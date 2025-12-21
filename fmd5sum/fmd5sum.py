@@ -6,9 +6,13 @@ from functools import partial
 
 def md5sum(filename, blocksize=65536):
     """Optimized MD5 checksum calculator with low-level file I/O."""
+    OPEN_FLAGS = os.O_RDONLY
+    if sys.platform.startswith("win32"):
+        OPEN_FLAGS |= os.O_BINARY
+
     hash_md5 = hashlib.md5()
     try:
-        fd = os.open(filename, os.O_RDONLY | os.O_BINARY)
+        fd = os.open(filename, OPEN_FLAGS)
         with open(fd, "rb", closefd=True) as f:
             while True:
                 block = f.read(blocksize)
