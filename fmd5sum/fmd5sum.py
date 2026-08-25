@@ -1,64 +1,110 @@
+import argparse
+import glob
 import hashlib
 import os
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
-def md5sum(filename, blocksize=65536):
-    """Optimized MD5 checksum calculator with low-level file I/O."""
-    OPEN_FLAGS = os.O_RDONLY
-    if sys.platform.startswith("win32"):
-        OPEN_FLAGS |= os.O_BINARY
 
-    hash_md5 = hashlib.md5()
+DEFAULT_BLOCKSIZE = 512 * 1024
+DEFAULT_MAX_WORKERS = 8
+
+
+def _positive_int(value):
     try:
-        fd = os.open(filename, OPEN_FLAGS)
-        with open(fd, "rb", closefd=True) as f:
-            while True:
-                block = f.read(blocksize)
-                if not block:
-                    break
-                hash_md5.update(block)
-    except (OSError, IOError) as e:
-        print(f"Error processing {filename}: {e}", file=sys.stderr)
-        return None
-    return hash_md5.hexdigest()
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be an integer") from exc
 
-def process_files(files, max_workers=None, blocksize=65536 * 8):
-    """Process files using parallel execution with adaptive settings."""
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be greater than zero")
+    return parsed
+
+
+def _expand_file_arguments(files):
+    """Expand wildcard arguments on shells that do not do it themselves."""
+    expanded = []
+    for filename in files:
+        filename = os.fspath(filename)
+        if glob.has_magic(filename):
+            matches = glob.glob(filename, recursive=True)
+            if matches:
+                expanded.extend(matches)
+                continue
+        expanded.append(filename)
+    return expanded
+
+
+def md5sum(filename, blocksize=65536):
+    """Return the MD5 checksum for a file, or None when it cannot be read."""
+    if blocksize <= 0:
+        raise ValueError("blocksize must be greater than zero")
+
+    digest = hashlib.md5(usedforsecurity=False)
+    try:
+        with open(filename, "rb") as file_handle:
+            while block := file_handle.read(blocksize):
+                digest.update(block)
+    except OSError as exc:
+        print(f"Error processing {filename}: {exc}", file=sys.stderr)
+        return None
+    return digest.hexdigest()
+
+
+def process_files(files, max_workers=None, blocksize=DEFAULT_BLOCKSIZE):
+    """Print checksums for files and return a command-style exit status."""
+    if blocksize <= 0:
+        raise ValueError("blocksize must be greater than zero")
+    if max_workers is not None and max_workers <= 0:
+        raise ValueError("max_workers must be greater than zero")
+
+    files = list(files)
+    if not files:
+        return 0
 
     if max_workers is None:
-        max_workers = os.cpu_count() or 4
-    
+        cpu_count = os.cpu_count() or 1
+        max_workers = min(len(files), cpu_count, DEFAULT_MAX_WORKERS)
 
     worker = partial(md5sum, blocksize=blocksize)
-    
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        future_to_file = {executor.submit(worker, file): file for file in files}
-        
-        for future in as_completed(future_to_file):
-            file = future_to_file[future]
-            try:
-                md5 = future.result()
-                if md5:
-                    print(f"{md5}  {file}")
-                else:
-                    print(f"Failed to process: {file}", file=sys.stderr)
-            except Exception as e:
-                print(f"Error processing {file}: {e}", file=sys.stderr)
+    failed = False
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for filename, checksum in zip(files, executor.map(worker, files)):
+            if checksum is None:
+                failed = True
+            else:
+                print(f"{checksum}  {filename}")
 
-def main():
-    """Enhanced main function with command-line arguments."""
-    import argparse
-    parser = argparse.ArgumentParser(description='Parallel MD5 checksum calculator')
-    parser.add_argument('files', nargs='+', help='Files to process')
-    parser.add_argument('-j', '--workers', type=int, default=None,
-                        help='Number of parallel workers (default: CPU count)')
-    parser.add_argument('-b', '--blocksize', type=int, default=524288,
-                        help='I/O block size in bytes (default: 512KB)')
-    args = parser.parse_args()
+    return 1 if failed else 0
 
-    process_files(args.files, max_workers=args.workers, blocksize=args.blocksize)
+
+def main(argv=None):
+    """Run the command-line interface and return its exit status."""
+    parser = argparse.ArgumentParser(
+        prog="fmd5sum",
+        description="Parallel MD5 checksum calculator for multiple files"
+    )
+    parser.add_argument("files", nargs="+", help="Files or wildcard patterns to process")
+    parser.add_argument(
+        "-j",
+        "--workers",
+        type=_positive_int,
+        default=None,
+        help=f"Number of worker threads (default: up to {DEFAULT_MAX_WORKERS})",
+    )
+    parser.add_argument(
+        "-b",
+        "--blocksize",
+        type=_positive_int,
+        default=DEFAULT_BLOCKSIZE,
+        help="I/O block size in bytes (default: 512 KiB)",
+    )
+    args = parser.parse_args(argv)
+
+    files = _expand_file_arguments(args.files)
+    return process_files(files, max_workers=args.workers, blocksize=args.blocksize)
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

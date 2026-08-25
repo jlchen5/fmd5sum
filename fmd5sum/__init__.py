@@ -2,6 +2,6 @@ from .fmd5sum import md5sum, main, process_files
 
 __all__ = ["md5sum", "main", "process_files"]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "Jiale Chen"
 __email__ = "xomics1@gmail.com"

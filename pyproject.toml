@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fmd5sum"
+dynamic = ["version"]
+description = "A cross-platform MD5 checksum calculator for multiple files."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "Jiale Chen", email = "xomics1@gmail.com" },
+]
+keywords = ["md5", "checksum", "hash", "cli"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: System :: Archiving",
+  "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/jlchen5/fmd5sum"
+Issues = "https://github.com/jlchen5/fmd5sum/issues"
+Source = "https://github.com/jlchen5/fmd5sum"
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2",
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+]
+
+[project.scripts]
+fmd5sum = "fmd5sum.fmd5sum:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "fmd5sum.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["fmd5sum*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]

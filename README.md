@@ -1,33 +1,66 @@
 # fmd5sum
 
-# Parallel MD5 Checksum Utility
+`fmd5sum` is a small, cross-platform command-line tool and Python library for
+calculating standard MD5 checksums. It processes multiple files concurrently,
+keeps output in input order, and returns a non-zero exit status if any file
+cannot be read.
 
-This Python package provides a highly optimized, parallel implementation for calculating MD5 checksums of files. It significantly outperforms standard `md5sum` tools by leveraging modern multi-core processors.
+> [!WARNING]
+> MD5 is not collision resistant. Use this tool for compatibility and
+> non-adversarial file integrity checks, not for passwords, signatures, or
+> security-sensitive verification.
 
-## Features
+## Requirements
 
-- ⚡ **Multi-core processing**: Uses all available CPU cores
-- 📁 **Large file optimized**: Handles multi-gigabyte files efficiently
-- ⏱️ **Faster computation**: Typically 3-5x speedup compared to single-threaded implementations
-- 🛠️ **Configurable block sizes**: Optimize for your specific storage system
-- 📶 **Progress feedback**: Real-time processing status
-- 🐧 **Cross-platform**: Works on Windows, Linux and macOS
+- Python 3.10 or newer
+- Windows, macOS, or Linux
+- No runtime dependencies outside the Python standard library
 
 ## Installation
 
+### Install the command with pipx
+
+This is the recommended option for end users because it keeps the command in
+an isolated environment:
+
 ```bash
-pip install parallel-md5sum
+pipx install fmd5sum
+fmd5sum --help
 ```
 
-or clone directly from GitHub:
+### Install with pip
 
 ```bash
-git clone https://github.com/yourusername/parallel-md5sum.git
-cd parallel-md5sum
-python setup.py install
+python -m pip install fmd5sum
 ```
 
-with conda:
+### Install from source
+
+Clone the repository, create a virtual environment, and install the project.
+
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/jlchen5/fmd5sum.git
+cd fmd5sum
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install .
+```
+
+macOS or Linux:
+
+```bash
+git clone https://github.com/jlchen5/fmd5sum.git
+cd fmd5sum
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install .
+```
+
+### Install with Conda
 
 ```bash
 conda env create -f environment.yml
@@ -36,90 +69,79 @@ conda activate fmd5sum-env
 
 ## Usage
 
-### Basic Usage
+Calculate one or more checksums:
+
 ```bash
-fmd5sum.py file1.txt file2.img
+fmd5sum file1.txt file2.img
 ```
 
-### Process Multiple Files
+Wildcard patterns are expanded by `fmd5sum`, including on Windows shells that
+do not expand them. Quote the pattern to get consistent behavior:
+
 ```bash
-fmd5sum.py *.jpg *.png
+fmd5sum "images/*.jpg" "images/*.png"
 ```
 
-### Advanced Options
+Choose the worker count and read block size:
+
 ```bash
-# Use 8 worker processes with 2MB block size
-fmd5sum.py -j 8 -b 2097152 large_file.iso
-
-# Process all files in a directory
-fmd5sum.py path/to/directory/*
+fmd5sum --workers 4 --blocksize 1048576 file1.iso file2.iso
 ```
 
-### Command Line Options
-```
-usage: fmd5sum.py [-h] [-j WORKERS] [-b BLOCKSIZE] files [files ...]
+The package can also be run without installing its console script:
 
-Parallel MD5 checksum calculator
-
-positional arguments:
-  files                 Files to process
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -j WORKERS, --workers WORKERS
-                        Number of parallel workers (default: CPU count)
-  -b BLOCKSIZE, --blocksize BLOCKSIZE
-                        I/O block size in bytes (default: 512KB)
+```bash
+python -m fmd5sum file1.txt file2.img
 ```
 
-## API Usage
+Run `fmd5sum --help` for all options. A successful run returns exit code `0`.
+If one or more files cannot be processed, valid checksums are still printed and
+the command returns exit code `1`. Invalid arguments return exit code `2`.
 
-You can use the MD5 calculation functionality in your own Python projects:
+## Python API
 
 ```python
-from parallel_md5sum import md5sum
+from fmd5sum import md5sum, process_files
 
-# Calculate checksum for a single file
 checksum = md5sum("path/to/file.ext")
-print(f"File checksum: {checksum}")
-
-# Process multiple files concurrently
-from parallel_md5sum import process_files
-
-file_list = ["file1.txt", "file2.jpg", "large_file.iso"]
-process_files(file_list, max_workers=4, blocksize=1048576)  # 1MB blocks
+status = process_files(["file1.txt", "file2.img"], max_workers=4)
 ```
 
-## Performance Comparison
+`md5sum()` returns `None` and reports an error to stderr when the file cannot
+be read. It raises `ValueError` when `blocksize` is not positive.
+`process_files()` returns a command-style status code: `0` for success and `1`
+when at least one file failed.
 
-Tested on a 16-core processor with 5GB test file:
+## Performance
 
-| Method | Time (seconds) | Speedup |
-|--------|----------------|---------|
-| Standard md5sum | 45.2 | 1.0x |
-| Single-threaded | 44.7 | 1.01x |
-| **parallel-md5sum** (4 workers) | 15.8 | 2.86x |
-| **parallel-md5sum** (8 workers) | 10.1 | 4.48x |
-| **parallel-md5sum** (16 workers) | **8.9** | **5.08x** |
+Concurrency is applied across independent files. A single file is read by one
+worker because standard MD5 has a sequential chaining dependency. The default
+worker count is capped at eight and never exceeds the number of input files or
+available CPUs. Use `--workers` to tune throughput for the storage device.
 
-## Requirements
+Thread-based workers avoid multiprocessing startup and serialization overhead,
+especially on Windows and macOS. Actual throughput depends mainly on storage,
+file sizes, cache state, and the number of independent devices. Benchmark with
+representative data before increasing concurrency.
 
-- Python 3.7+
-- Works on all major operating systems
-- No external dependencies
+## Development and packaging
 
-## Contributing
+Install development dependencies and run the tests:
 
-Contributions are welcome! Please open an issue or submit a pull request:
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest
+```
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a pull request
+Build a platform-independent wheel and source archive:
+
+```bash
+python -m build
+```
+
+The artifacts are written to `dist/`. The generated `py3-none-any` wheel can be
+installed on Windows, macOS, and Linux with a supported Python version.
 
 ## License
 
-This project is licensed under the [MIT License](https://github.com/jlchen5/fmd5sum/blob/main/LICENSE) - see the LICENSE file for details.
-
-
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
